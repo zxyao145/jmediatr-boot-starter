@@ -12,4 +12,10 @@ public interface ISender {
      * @return 处理结果
      */
     <TResponse> TResponse send(IRequest<TResponse> request);
+
+    /**
+     * 无返回值的单播发布接口
+     * @param request 单播消息
+     */
+    void send(IVoidRequest request);
 }

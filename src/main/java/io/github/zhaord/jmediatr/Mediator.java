@@ -74,7 +74,9 @@ public class Mediator implements IMediator, ApplicationContextAware {
         for (Type type : genericInterfaces) {
             if ((type instanceof ParameterizedType)) {
                 ParameterizedType parameterizedType = (ParameterizedType) type;
-                if (!parameterizedType.getRawType().equals(IRequest.class)) {
+                Class<?> rawType = (Class<?>) parameterizedType.getRawType();
+
+                if (!IRequest.class.isAssignableFrom(rawType)) {
                     continue;
                 }
                 responseType = parameterizedType.getActualTypeArguments()[0];
@@ -111,6 +113,28 @@ public class Mediator implements IMediator, ApplicationContextAware {
                 .findFirst()
                 .map(h -> h.handle(request))
                 .orElseThrow(() -> new NoRequestHandlerException(request.getClass()));
+    }
+
+    @Override
+    public void send(IVoidRequest request) {
+        Class<?> requestClass = request.getClass();
+
+        ResolvableType handlerType = ResolvableType.forClassWithGenerics(
+                IVoidRequestHandler.class,
+                requestClass);
+
+        String[] beanNamesForType = this.context.getBeanNamesForType(handlerType);
+        List<IVoidRequestHandler<IVoidRequest>> list = new ArrayList<>();
+        for (String beanBane :
+                beanNamesForType) {
+            list.add((IVoidRequestHandler<IVoidRequest>) this.context.getBean(beanBane));
+        }
+
+        if (list.isEmpty()) {
+            throw new NoRequestHandlerException(request.getClass());
+        }
+
+        list.stream().findFirst().get().handle(request);
     }
 
     @Override
